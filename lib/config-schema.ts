@@ -423,6 +423,12 @@ const generateFieldObjectSchema = (
           ])
           .optional()
           .nullable(),
+        width: z
+          .enum(["half"], {
+            message: "'width' must be \"half\".",
+          })
+          .optional()
+          .nullable(),
         required: z
           .boolean({
             message: "'required' must be a boolean.",
