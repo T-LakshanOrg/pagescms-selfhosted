@@ -407,6 +407,22 @@ const generateFieldObjectSchema = (
           })
           .optional()
           .nullable(),
+        collapsible: z
+          .union([
+            z.boolean(),
+            z.object(
+              {
+                collapsed: z.boolean().optional(),
+                summary: z.string().optional(),
+              },
+              {
+                message:
+                  "'collapsible' must be either a boolean or an object with 'collapsed' and 'summary' properties.",
+              },
+            ),
+          ])
+          .optional()
+          .nullable(),
         required: z
           .boolean({
             message: "'required' must be a boolean.",
