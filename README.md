@@ -147,3 +147,9 @@ Top-level fields with `position: sidebar` render in a sticky right column of the
 entry editor (stacked below the main column on narrow screens). Fields without
 it render in the main column in config order. Items with no sidebar fields look
 exactly as upstream. Nested fields ignore the key.
+
+### `collapsible` on single object fields
+
+A non-list `object` field with `collapsible: true` gets a toggle header showing
+its label. `collapsible: { collapsed: true }` starts it closed. Validation
+errors inside a closed group turn the header red. Lists are unchanged.
