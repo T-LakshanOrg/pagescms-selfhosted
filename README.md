@@ -138,3 +138,12 @@ For more detail, see:
 ## License
 
 Everything in this repo is released under the [MIT License](LICENSE).
+
+## Fork additions
+
+### `position: sidebar` on fields
+
+Top-level fields with `position: sidebar` render in a sticky right column of the
+entry editor (stacked below the main column on narrow screens). Fields without
+it render in the main column in config order. Items with no sidebar fields look
+exactly as upstream. Nested fields ignore the key.
