@@ -401,6 +401,12 @@ const generateFieldObjectSchema = (
           })
           .optional()
           .nullable(),
+        position: z
+          .enum(["sidebar"], {
+            message: "'position' must be \"sidebar\".",
+          })
+          .optional()
+          .nullable(),
         required: z
           .boolean({
             message: "'required' must be a boolean.",
