@@ -153,3 +153,9 @@ exactly as upstream. Nested fields ignore the key.
 A non-list `object` field with `collapsible: true` gets a toggle header showing
 its label. `collapsible: { collapsed: true }` starts it closed. Validation
 errors inside a closed group turn the header red. Lists are unchanged.
+
+### `width: half` on fields
+
+A field with `width: half` takes half the row on screens 640px and wider; two
+consecutive half-width fields sit side by side. Other fields span the full
+row. Everything stacks on narrow screens. Ignored inside the editor sidebar.
