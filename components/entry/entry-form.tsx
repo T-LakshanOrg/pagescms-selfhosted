@@ -1202,7 +1202,7 @@ const EntryForm = ({
           {filenameNode}
           {renderFields(mainFields, undefined, registerBeforeSubmitHook, runBeforeValidationHooks)}
         </div>
-        <aside className="grid items-start gap-6 min-w-0 rounded-lg border p-4 lg:sticky lg:top-6">
+        <aside className="grid items-start gap-6 min-w-0 rounded-lg border p-4 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
           {renderFields(sidebarFields, undefined, registerBeforeSubmitHook, runBeforeValidationHooks)}
         </aside>
       </form>
