@@ -1158,20 +1158,53 @@ const EntryForm = ({
     [form, handleSubmit, runBeforeValidationHooks],
   );
 
+  const { mainFields, sidebarFields } = useMemo(() => {
+    const main: Field[] = [];
+    const sidebar: Field[] = [];
+    for (const field of fields) {
+      if (field?.position === "sidebar") sidebar.push(field);
+      else main.push(field);
+    }
+    return { mainFields: main, sidebarFields: sidebar };
+  }, [fields]);
+  const hasSidebar = sidebarFields.length > 0;
+
+  const filenameNode = filePath ? (
+    <div className="space-y-2 overflow-hidden">
+      <FormLabel>Filename</FormLabel>
+      {filePath}
+    </div>
+  ) : null;
+
+  if (!hasSidebar) {
+    return (
+      <Form {...form}>
+        <form
+          id="entry-form"
+          onSubmit={handleFormSubmit}
+          className="w-full max-w-screen-md mx-auto grid items-start gap-6"
+        >
+          {filenameNode}
+          {renderFields(fields, undefined, registerBeforeSubmitHook, runBeforeValidationHooks)}
+        </form>
+      </Form>
+    );
+  }
+
   return (
     <Form {...form}>
       <form
         id="entry-form"
         onSubmit={handleFormSubmit}
-        className="w-full max-w-screen-md mx-auto grid items-start gap-6"
+        className="w-full max-w-screen-lg mx-auto grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]"
       >
-        {filePath && (
-          <div className="space-y-2 overflow-hidden">
-            <FormLabel>Filename</FormLabel>
-            {filePath}
-          </div>
-        )}
-        {renderFields(fields, undefined, registerBeforeSubmitHook, runBeforeValidationHooks)}
+        <div className="grid items-start gap-6 min-w-0">
+          {filenameNode}
+          {renderFields(mainFields, undefined, registerBeforeSubmitHook, runBeforeValidationHooks)}
+        </div>
+        <aside className="grid items-start gap-6 min-w-0 rounded-lg border p-4 lg:sticky lg:top-6">
+          {renderFields(sidebarFields, undefined, registerBeforeSubmitHook, runBeforeValidationHooks)}
+        </aside>
       </form>
     </Form>
   );
