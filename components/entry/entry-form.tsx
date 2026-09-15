@@ -160,6 +160,15 @@ const hasCollapsibleSummary = (field: Field) =>
   typeof field.list.collapsible === "object" &&
   !!field.list.collapsible.summary;
 
+const isGroupCollapsible = (field: Field) =>
+  field.type === "object" && !field.list && !!field.collapsible;
+
+const isGroupDefaultCollapsed = (field: Field) =>
+  isGroupCollapsible(field) &&
+  typeof field.collapsible === "object" &&
+  field.collapsible !== null &&
+  !!field.collapsible.collapsed;
+
 const hasExplicitReadonly = (field: Field) =>
   Boolean(field.readonly) &&
   !(field as FieldWithReadonlyMeta).__inheritedReadonly;
@@ -798,10 +807,13 @@ const ObjectField = forwardRef<HTMLDivElement, NestedFieldProps>(
       keyPrefix,
     } = props;
 
-    const isCollapsible = !!(
-      field.list &&
-      !(typeof field.list === "object" && field.list?.collapsible === false)
-    );
+    const groupCollapsible = isGroupCollapsible(field);
+    const isCollapsible =
+      groupCollapsible ||
+      !!(
+        field.list &&
+        !(typeof field.list === "object" && field.list?.collapsible === false)
+      );
 
     const {
       formState: { errors },
@@ -811,7 +823,9 @@ const ObjectField = forwardRef<HTMLDivElement, NestedFieldProps>(
       return hasFieldPathError(errors, fieldName);
     };
 
-    const itemLabel = hasCollapsibleSummary(field) ? (
+    const itemLabel = groupCollapsible ? (
+      field.label || field.name
+    ) : hasCollapsibleSummary(field) ? (
       <ObjectFieldSummaryLabel
         field={field}
         fieldName={fieldName}
@@ -892,10 +906,15 @@ const SingleField = ({
     control,
     formState: { errors },
   } = useFormContext();
+  const groupCollapsible = isGroupCollapsible(field);
+  const [groupOpen, setGroupOpen] = useState(!isGroupDefaultCollapsed(field));
+  const toggleGroupOpen = useCallback(() => setGroupOpen((v) => !v), []);
   const isRichTextField = field.type === "rich-text";
   const showLabelSlot = isRichTextField && field.options?.switcher !== false;
   const shouldShowFieldMeta =
-    showLabel && (field.label !== false || field.required || showLabelSlot);
+    showLabel &&
+    !groupCollapsible &&
+    (field.label !== false || field.required || showLabelSlot);
   const rawLabelSlotId = useId();
   const labelSlotId = useMemo(
     () => `field-label-slot-${rawLabelSlotId.replace(/[^a-zA-Z0-9_-]/g, "")}`,
@@ -940,8 +959,14 @@ const SingleField = ({
           keyPrefix={keyPrefix}
           renderFields={renderFields}
           registerBeforeSubmitHook={registerBeforeSubmitHook}
-          isOpen={isOpen}
-          onToggleOpen={isCollapsible ? toggleOpen : undefined}
+          isOpen={groupCollapsible ? groupOpen : isOpen}
+          onToggleOpen={
+            groupCollapsible
+              ? toggleGroupOpen
+              : isCollapsible
+                ? toggleOpen
+                : undefined
+          }
           index={isCollapsible ? index : undefined}
         />
         {field.description && (
