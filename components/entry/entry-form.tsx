@@ -738,7 +738,7 @@ const BlocksField = forwardRef<HTMLDivElement, NestedFieldProps>(
               </Badge>
             </header>
             <div
-              className={cn("p-4 grid gap-6 border-t", isOpen ? "" : "hidden")}
+              className={cn("p-4 field-grid border-t", isOpen ? "" : "hidden")}
             >
               {selectedBlockDefinition.type === "object" ? (
                 (() => {
@@ -858,7 +858,7 @@ const ObjectField = forwardRef<HTMLDivElement, NestedFieldProps>(
         )}
         <div
           className={cn(
-            "p-4 grid gap-6",
+            "p-4 field-grid",
             isCollapsible && "border-t",
             isOpen ? "" : "hidden",
           )}
@@ -1123,32 +1123,35 @@ const EntryForm = ({
           ? `${keyPrefix}.${effectiveField.name}`
           : currentFieldName;
 
-        if (
+        const node =
           effectiveField.list === true ||
           (typeof effectiveField.list === "object" &&
-            effectiveField.list !== null)
-        ) {
-          return (
+            effectiveField.list !== null) ? (
             <ListField
-              key={currentFieldKey}
               field={effectiveField}
               fieldName={currentFieldName}
               renderFields={renderFields}
               registerBeforeSubmitHook={registerBeforeSubmitHook}
               runBeforeSubmitHooks={runBeforeSubmitHooks}
             />
+          ) : (
+            <SingleField
+              field={effectiveField}
+              fieldName={currentFieldName}
+              keyPrefix={currentFieldKey}
+              renderFields={renderFields}
+              registerBeforeSubmitHook={registerBeforeSubmitHook}
+              onChangeRegistered={onChangeRegistered}
+            />
           );
-        }
         return (
-          <SingleField
+          <div
             key={currentFieldKey}
-            field={effectiveField}
-            fieldName={currentFieldName}
-            keyPrefix={currentFieldKey}
-            renderFields={renderFields}
-            registerBeforeSubmitHook={registerBeforeSubmitHook}
-            onChangeRegistered={onChangeRegistered}
-          />
+            className="min-w-0"
+            data-width={effectiveField.width ?? undefined}
+          >
+            {node}
+          </div>
         );
       });
     },
@@ -1207,7 +1210,7 @@ const EntryForm = ({
         <form
           id="entry-form"
           onSubmit={handleFormSubmit}
-          className="w-full max-w-screen-md mx-auto grid items-start gap-6"
+          className="w-full max-w-screen-md mx-auto field-grid"
         >
           {filenameNode}
           {renderFields(fields, undefined, registerBeforeSubmitHook, runBeforeValidationHooks)}
@@ -1223,7 +1226,7 @@ const EntryForm = ({
         onSubmit={handleFormSubmit}
         className="w-full max-w-screen-lg mx-auto grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]"
       >
-        <div className="grid items-start gap-6 min-w-0">
+        <div className="field-grid min-w-0">
           {filenameNode}
           {renderFields(mainFields, undefined, registerBeforeSubmitHook, runBeforeValidationHooks)}
         </div>
