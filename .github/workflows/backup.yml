@@ -1,0 +1,99 @@
+# Backs up this repository to a Cloudflare R2 bucket as a single git bundle file.
+#
+# It runs every week on a schedule, and on demand from the "Back up now" button
+# in Pages CMS (or from GitHub's own "Run workflow" button on the Actions tab).
+#
+# To use this in another repository, copy this file as it is. Change R2_BUCKET
+# below if your bucket has a different name, and R2_FOLDER to choose which
+# top-level folder in the bucket the backups go to (sites, cms, ...). Three secrets must exist in the
+# repository settings (Settings > Secrets and variables > Actions):
+#   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY
+#
+# Old backups are not deleted here. Set a lifecycle rule on the bucket for that.
+
+name: Back up repository to R2
+
+on:
+  schedule:
+    # Every Sunday at 03:00 UTC. Cron times are always UTC, not local time.
+    - cron: "0 3 * * 0"
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: Pages CMS payload as JSON (filled in automatically by the CMS button, leave empty otherwise)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+# Never run two backups of the same repository at the same time.
+concurrency:
+  group: backup-${{ github.repository }}
+  cancel-in-progress: false
+
+env:
+  # The R2 bucket that receives the backups.
+  R2_BUCKET: pagescms-backups
+  # Top-level folder inside the bucket. Backups land in <R2_FOLDER>/<repo-name>/.
+  R2_FOLDER: cms
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Note who asked for this backup
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.payload != ''
+        env:
+          PAYLOAD: ${{ github.event.inputs.payload }}
+        run: |
+          WHO=$(printf '%s' "$PAYLOAD" | jq -r '.triggeredBy.name // empty' 2>/dev/null || true)
+          WHO=${WHO:-someone}
+          echo "Backup requested from Pages CMS by ${WHO}."
+          echo "Requested from Pages CMS by **${WHO}**." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Make a complete copy of the repository
+        env:
+          GIT_TERMINAL_PROMPT: "0"
+        run: |
+          git clone --mirror --quiet \
+            "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" repo.git
+
+      - name: Pack it into one bundle file
+        run: |
+          NAME="${GITHUB_REPOSITORY#*/}"
+          STAMP="$(date -u +%Y-%m-%d_%H%M)"
+          FILE="${NAME}_${STAMP}.bundle"
+          git -C repo.git bundle create "../${FILE}" HEAD --branches --tags
+          echo "FILE=${FILE}" >> "$GITHUB_ENV"
+          echo "NAME=${NAME}" >> "$GITHUB_ENV"
+
+      - name: Check the bundle can be restored
+        run: |
+          git -C repo.git bundle verify "../${FILE}"
+          git clone --quiet "$FILE" restore-check
+          echo "Latest commit in the backup:"
+          git -C restore-check log -1 --oneline
+          rm -rf restore-check
+
+      - name: Install rclone
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends rclone
+
+      - name: Upload to R2
+        env:
+          RCLONE_CONFIG_R2_TYPE: s3
+          RCLONE_CONFIG_R2_PROVIDER: Cloudflare
+          RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          RCLONE_CONFIG_R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+          RCLONE_CONFIG_R2_REGION: auto
+          RCLONE_CONFIG_R2_ACL: private
+          RCLONE_CONFIG_R2_NO_CHECK_BUCKET: "true"
+        run: |
+          DEST="r2:${R2_BUCKET}/${R2_FOLDER}/${NAME}/${FILE}"
+          rclone copyto --stats-one-line -v "$FILE" "$DEST"
+          SIZE=$(du -h "$FILE" | cut -f1)
+          echo "Backup saved as ${R2_FOLDER}/${NAME}/${FILE} (${SIZE}) in bucket ${R2_BUCKET}."
+          echo "Backup saved as \`${R2_FOLDER}/${NAME}/${FILE}\` (${SIZE}) in bucket \`${R2_BUCKET}\`." >> "$GITHUB_STEP_SUMMARY"
