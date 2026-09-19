@@ -401,6 +401,34 @@ const generateFieldObjectSchema = (
           })
           .optional()
           .nullable(),
+        position: z
+          .enum(["sidebar"], {
+            message: "'position' must be \"sidebar\".",
+          })
+          .optional()
+          .nullable(),
+        collapsible: z
+          .union([
+            z.boolean(),
+            z.object(
+              {
+                collapsed: z.boolean().optional(),
+                summary: z.string().optional(),
+              },
+              {
+                message:
+                  "'collapsible' must be either a boolean or an object with 'collapsed' and 'summary' properties.",
+              },
+            ),
+          ])
+          .optional()
+          .nullable(),
+        width: z
+          .enum(["half"], {
+            message: "'width' must be \"half\".",
+          })
+          .optional()
+          .nullable(),
         required: z
           .boolean({
             message: "'required' must be a boolean.",

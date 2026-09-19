@@ -160,6 +160,15 @@ const hasCollapsibleSummary = (field: Field) =>
   typeof field.list.collapsible === "object" &&
   !!field.list.collapsible.summary;
 
+const isGroupCollapsible = (field: Field) =>
+  field.type === "object" && !field.list && !!field.collapsible;
+
+const isGroupDefaultCollapsed = (field: Field) =>
+  isGroupCollapsible(field) &&
+  typeof field.collapsible === "object" &&
+  field.collapsible !== null &&
+  !!field.collapsible.collapsed;
+
 const hasExplicitReadonly = (field: Field) =>
   Boolean(field.readonly) &&
   !(field as FieldWithReadonlyMeta).__inheritedReadonly;
@@ -729,7 +738,7 @@ const BlocksField = forwardRef<HTMLDivElement, NestedFieldProps>(
               </Badge>
             </header>
             <div
-              className={cn("p-4 grid gap-6 border-t", isOpen ? "" : "hidden")}
+              className={cn("p-4 field-grid border-t", isOpen ? "" : "hidden")}
             >
               {selectedBlockDefinition.type === "object" ? (
                 (() => {
@@ -798,10 +807,13 @@ const ObjectField = forwardRef<HTMLDivElement, NestedFieldProps>(
       keyPrefix,
     } = props;
 
-    const isCollapsible = !!(
-      field.list &&
-      !(typeof field.list === "object" && field.list?.collapsible === false)
-    );
+    const groupCollapsible = isGroupCollapsible(field);
+    const isCollapsible =
+      groupCollapsible ||
+      !!(
+        field.list &&
+        !(typeof field.list === "object" && field.list?.collapsible === false)
+      );
 
     const {
       formState: { errors },
@@ -811,7 +823,9 @@ const ObjectField = forwardRef<HTMLDivElement, NestedFieldProps>(
       return hasFieldPathError(errors, fieldName);
     };
 
-    const itemLabel = hasCollapsibleSummary(field) ? (
+    const itemLabel = groupCollapsible ? (
+      field.label || field.name
+    ) : hasCollapsibleSummary(field) ? (
       <ObjectFieldSummaryLabel
         field={field}
         fieldName={fieldName}
@@ -844,7 +858,7 @@ const ObjectField = forwardRef<HTMLDivElement, NestedFieldProps>(
         )}
         <div
           className={cn(
-            "p-4 grid gap-6",
+            "p-4 field-grid",
             isCollapsible && "border-t",
             isOpen ? "" : "hidden",
           )}
@@ -892,10 +906,15 @@ const SingleField = ({
     control,
     formState: { errors },
   } = useFormContext();
+  const groupCollapsible = isGroupCollapsible(field);
+  const [groupOpen, setGroupOpen] = useState(!isGroupDefaultCollapsed(field));
+  const toggleGroupOpen = useCallback(() => setGroupOpen((v) => !v), []);
   const isRichTextField = field.type === "rich-text";
   const showLabelSlot = isRichTextField && field.options?.switcher !== false;
   const shouldShowFieldMeta =
-    showLabel && (field.label !== false || field.required || showLabelSlot);
+    showLabel &&
+    !groupCollapsible &&
+    (field.label !== false || field.required || showLabelSlot);
   const rawLabelSlotId = useId();
   const labelSlotId = useMemo(
     () => `field-label-slot-${rawLabelSlotId.replace(/[^a-zA-Z0-9_-]/g, "")}`,
@@ -940,8 +959,14 @@ const SingleField = ({
           keyPrefix={keyPrefix}
           renderFields={renderFields}
           registerBeforeSubmitHook={registerBeforeSubmitHook}
-          isOpen={isOpen}
-          onToggleOpen={isCollapsible ? toggleOpen : undefined}
+          isOpen={groupCollapsible ? groupOpen : isOpen}
+          onToggleOpen={
+            groupCollapsible
+              ? toggleGroupOpen
+              : isCollapsible
+                ? toggleOpen
+                : undefined
+          }
           index={isCollapsible ? index : undefined}
         />
         {field.description && (
@@ -1098,32 +1123,35 @@ const EntryForm = ({
           ? `${keyPrefix}.${effectiveField.name}`
           : currentFieldName;
 
-        if (
+        const node =
           effectiveField.list === true ||
           (typeof effectiveField.list === "object" &&
-            effectiveField.list !== null)
-        ) {
-          return (
+            effectiveField.list !== null) ? (
             <ListField
-              key={currentFieldKey}
               field={effectiveField}
               fieldName={currentFieldName}
               renderFields={renderFields}
               registerBeforeSubmitHook={registerBeforeSubmitHook}
               runBeforeSubmitHooks={runBeforeSubmitHooks}
             />
+          ) : (
+            <SingleField
+              field={effectiveField}
+              fieldName={currentFieldName}
+              keyPrefix={currentFieldKey}
+              renderFields={renderFields}
+              registerBeforeSubmitHook={registerBeforeSubmitHook}
+              onChangeRegistered={onChangeRegistered}
+            />
           );
-        }
         return (
-          <SingleField
+          <div
             key={currentFieldKey}
-            field={effectiveField}
-            fieldName={currentFieldName}
-            keyPrefix={currentFieldKey}
-            renderFields={renderFields}
-            registerBeforeSubmitHook={registerBeforeSubmitHook}
-            onChangeRegistered={onChangeRegistered}
-          />
+            className="min-w-0"
+            data-width={effectiveField.width ?? undefined}
+          >
+            {node}
+          </div>
         );
       });
     },
@@ -1158,20 +1186,53 @@ const EntryForm = ({
     [form, handleSubmit, runBeforeValidationHooks],
   );
 
+  const { mainFields, sidebarFields } = useMemo(() => {
+    const main: Field[] = [];
+    const sidebar: Field[] = [];
+    for (const field of fields) {
+      if (field?.position === "sidebar") sidebar.push(field);
+      else main.push(field);
+    }
+    return { mainFields: main, sidebarFields: sidebar };
+  }, [fields]);
+  const hasSidebar = sidebarFields.length > 0;
+
+  const filenameNode = filePath ? (
+    <div className="space-y-2 overflow-hidden">
+      <FormLabel>Filename</FormLabel>
+      {filePath}
+    </div>
+  ) : null;
+
+  if (!hasSidebar) {
+    return (
+      <Form {...form}>
+        <form
+          id="entry-form"
+          onSubmit={handleFormSubmit}
+          className="w-full max-w-screen-md mx-auto field-grid"
+        >
+          {filenameNode}
+          {renderFields(fields, undefined, registerBeforeSubmitHook, runBeforeValidationHooks)}
+        </form>
+      </Form>
+    );
+  }
+
   return (
     <Form {...form}>
       <form
         id="entry-form"
         onSubmit={handleFormSubmit}
-        className="w-full max-w-screen-md mx-auto grid items-start gap-6"
+        className="w-full max-w-screen-lg mx-auto grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]"
       >
-        {filePath && (
-          <div className="space-y-2 overflow-hidden">
-            <FormLabel>Filename</FormLabel>
-            {filePath}
-          </div>
-        )}
-        {renderFields(fields, undefined, registerBeforeSubmitHook, runBeforeValidationHooks)}
+        <div className="field-grid min-w-0">
+          {filenameNode}
+          {renderFields(mainFields, undefined, registerBeforeSubmitHook, runBeforeValidationHooks)}
+        </div>
+        <aside className="grid items-start gap-6 min-w-0 rounded-lg border p-4 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
+          {renderFields(sidebarFields, undefined, registerBeforeSubmitHook, runBeforeValidationHooks)}
+        </aside>
       </form>
     </Form>
   );

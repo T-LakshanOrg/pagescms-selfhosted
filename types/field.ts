@@ -8,6 +8,8 @@ export type Field = {
   collapsible?: boolean | { collapsed?: boolean; summary?: string };
   hidden?: boolean | null;
   readonly?: boolean | null;
+  position?: "sidebar" | null;
+  width?: "half" | null;
   required?: boolean | null;
   pattern?: string | { regex: string; message?: string };
   options?: Record<string, unknown> | null;

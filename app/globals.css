@@ -124,3 +124,22 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Fork addition: containers of fields. A child with data-width="half"
+   takes one column on sm+ screens; everything else spans both. */
+.field-grid {
+  display: grid;
+  align-items: start;
+  gap: calc(var(--spacing) * 6);
+}
+@media (min-width: 640px) {
+  .field-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .field-grid > * {
+    grid-column: span 2 / span 2;
+  }
+  .field-grid > [data-width="half"] {
+    grid-column: span 1 / span 1;
+  }
+}
