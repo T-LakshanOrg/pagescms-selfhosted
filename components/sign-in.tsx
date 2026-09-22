@@ -184,9 +184,9 @@ export function SignIn() {
                 className="size-12 rounded-xl"
                 xmlns="http://www.w3.org/2000/svg"
               >
-                <rect width="480" height="480" rx="96" className="fill-foreground" />
-                <path d="M120 120H176V308H300V360H120V120Z" className="fill-background" />
-                <path d="M300 120H360V232H300V120Z" className="fill-background" />
+                <rect width="480" height="480" rx="96" fill="#6A3AE0" />
+                <path d="M120 120H176V308H300V360H120V120Z" fill="#FFFFFF" />
+                <path d="M300 120H360V232H300V120Z" fill="#FFFFFF" />
               </svg>
               <h1 className="text-lg font-medium tracking-tight text-center">
                 Sign in to LWP Test
