@@ -22,8 +22,8 @@ const description = "The No-Hassle CMS for GitHub";
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
-    template: "%s | Pages CMS",
-    default: "Pages CMS",
+    template: "%s | LWP Test",
+    default: "LWP Test",
   },
   description,
   alternates: {
@@ -32,21 +32,21 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     url: appUrl,
-    siteName: "Pages CMS",
-    title: "Pages CMS",
+    siteName: "LWP Test",
+    title: "LWP Test",
     description,
     images: [
       {
         url: socialImage,
         width: 1200,
         height: 630,
-        alt: "Pages CMS social card",
+        alt: "LWP Test social card",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Pages CMS",
+    title: "LWP Test",
     description,
     images: [socialImage],
   },

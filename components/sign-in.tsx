@@ -136,7 +136,7 @@ export function SignIn() {
       By clicking continue, you agree to our{" "}
       <a
         className="underline hover:decoration-muted-foreground/50"
-        href="https://pagescms.org/terms"
+        href="https://lwp-test.example.com/terms"
         target="_blank"
       >
         Terms of Service
@@ -144,7 +144,7 @@ export function SignIn() {
       and{" "}
       <a
         className="underline hover:decoration-muted-foreground/50"
-        href="https://pagescms.org/privacy"
+        href="https://lwp-test.example.com/privacy"
         target="_blank"
       >
         Privacy Policy
@@ -177,9 +177,21 @@ export function SignIn() {
           </div>
         ) : (
           <div className="space-y-6">
-            <h1 className="text-lg font-medium tracking-tight text-center">
-              Sign in to Pages CMS
-            </h1>
+            <div className="flex flex-col items-center gap-3">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 480 480"
+                className="size-12 rounded-xl"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect width="480" height="480" rx="96" className="fill-foreground" />
+                <path d="M120 120H176V308H300V360H120V120Z" className="fill-background" />
+                <path d="M300 120H360V232H300V120Z" className="fill-background" />
+              </svg>
+              <h1 className="text-lg font-medium tracking-tight text-center">
+                Sign in to LWP Test
+              </h1>
+            </div>
             <Button
               type="button"
               className="w-full"
