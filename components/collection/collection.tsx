@@ -33,6 +33,7 @@ import { requireApiSuccess } from "@/lib/api-client";
 import { EmptyCreate } from "@/components/empty-create";
 import { FileOptions } from "@/components/file/file-options";
 import { CollectionTable } from "./collection-table";
+import { InlineEditCell, isInlineEditableField } from "./inline-edit-cell";
 import { FolderCreate } from "@/components/folder-create";
 import { resolveContentOperations } from "@/lib/operations";
 import { useRepoHeader } from "@/components/repo/repo-header-context";
@@ -423,6 +424,47 @@ export function Collection({ name, path }: { name: string; path?: string }) {
     });
   }, []);
 
+  const handleFieldSaved = useCallback(
+    (entryPath: string, fieldPath: string, value: unknown, sha: string) => {
+      const updateNestedData = (items: any[]): any[] =>
+        items.map((item: any) => {
+          if (item.path === entryPath) {
+            const fields = { ...(item.fields ?? {}) };
+            const keys = fieldPath.split(".");
+            let target: Record<string, any> = fields;
+            keys.slice(0, -1).forEach((key) => {
+              target[key] = { ...(target[key] ?? {}) };
+              target = target[key];
+            });
+            target[keys[keys.length - 1]] = value;
+            return { ...item, fields, sha };
+          }
+          if (item.subRows && Array.isArray(item.subRows)) {
+            return { ...item, subRows: updateNestedData(item.subRows) };
+          }
+          return item;
+        });
+
+      setData((prevData) => (prevData ? updateNestedData(prevData) : prevData));
+
+      const collectionKeyPrefix = `/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collections/${encodeURIComponent(name)}?`;
+      void mutate(
+        (key) => typeof key === "string" && key.startsWith(collectionKeyPrefix),
+      );
+    },
+    [config.owner, config.repo, config.branch, name, mutate],
+  );
+
+  const editableFieldPaths = useMemo(
+    () =>
+      new Set<string>(
+        !schema.list && Array.isArray(schema.view?.editable)
+          ? schema.view.editable
+          : [],
+      ),
+    [schema.list, schema.view?.editable],
+  );
+
   const handleFolderCreate = useCallback((entry: any) => {
     const parentPath = getParentPath(entry.path);
     const parent = {
@@ -526,6 +568,24 @@ export function Collection({ name, path }: { name: string; path?: string }) {
                   >
                     {CellView}
                   </Link>
+                );
+              }
+              if (
+                row.original.type === "file" &&
+                editableFieldPaths.has(path) &&
+                isInlineEditableField(field)
+              ) {
+                return (
+                  <InlineEditCell
+                    name={name}
+                    entryPath={row.original.path}
+                    fieldPath={path}
+                    field={field}
+                    value={cellValue}
+                    onSaved={handleFieldSaved}
+                  >
+                    {CellView}
+                  </InlineEditCell>
                 );
               }
               return (
@@ -661,6 +721,8 @@ export function Collection({ name, path }: { name: string; path?: string }) {
     primaryField,
     handleDelete,
     handleRename,
+    handleFieldSaved,
+    editableFieldPaths,
     schema.view?.foldersFirst,
     schema.view?.layout,
     schema.view?.node?.filename,

@@ -159,3 +159,13 @@ errors inside a closed group turn the header red. Lists are unchanged.
 A field with `width: half` takes half the row on screens 640px and wider; two
 consecutive half-width fields sit side by side. Other fields span the full
 row. Everything stacks on narrow screens. Ignored inside the editor sidebar.
+
+### `view.editable` on collections
+
+List field paths under `view.editable` (e.g. `editable: [price]`) to edit them
+straight from the collection list. The cell shows the value as text; click it,
+type, press Enter to save, Escape or click away to cancel. Saving loads the
+latest copy of the entry, changes only that field and saves the whole entry
+(one commit). Works for `number` and `string` fields that are also listed in
+`view.fields` and are not `list`, `readonly` or `hidden`, and not the primary
+field; others stay read-only. Ignored for `list: true` collections.

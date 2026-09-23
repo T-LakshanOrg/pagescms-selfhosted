@@ -653,6 +653,16 @@ const ContentLeafSchema = z
               },
             )
             .optional(),
+          editable: z
+            .array(
+              z.string({
+                message: "Entries in the 'editable' array must be strings.",
+              }),
+              {
+                message: "'editable' must be an array of strings.",
+              },
+            )
+            .optional(),
           default: z
             .object(
               {
@@ -686,7 +696,7 @@ const ContentLeafSchema = z
         },
         {
           message:
-            "'view' must be an object with 'fields', 'primary', 'sort', 'search' and 'default' attributes.",
+            "'view' must be an object with 'fields', 'primary', 'sort', 'search', 'editable' and 'default' attributes.",
         },
       )
       .strict()
