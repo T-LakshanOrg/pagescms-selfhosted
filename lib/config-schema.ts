@@ -813,6 +813,14 @@ const BrandingSchema = z
   .object(
     {
       name: z.string({ message: "'name' must be a string." }).optional(),
+      description: z
+        .string({ message: "'description' must be a string." })
+        .max(200, { message: "'description' must be 200 characters or fewer." })
+        .optional(),
+      website: z
+        .string()
+        .regex(/^https?:\/\//, { message: "'website' must be a full address starting with https://." })
+        .optional(),
       logo: z
         .string()
         .regex(/\.(svg|png|jpe?g|webp)$/i, {
