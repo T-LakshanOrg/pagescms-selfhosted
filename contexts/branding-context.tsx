@@ -5,6 +5,8 @@ import { createContext, useContext } from "react";
 // Fork addition: the site's name and logo from `branding` in .pages.yml.
 type BrandingContextType = {
   name?: string;
+  description?: string;
+  website?: string;
   logo?: string | null;
 };
 

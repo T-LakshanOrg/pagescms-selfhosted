@@ -19,6 +19,8 @@ type BrandingColors = {
 
 type Branding = {
   name?: string;
+  description?: string;
+  website?: string;
   logo?: string;
   colors: BrandingColors;
   font: { body?: string; heading?: string };
@@ -46,6 +48,16 @@ const COLOR_KEYS: (keyof BrandingColors)[] = [
   "sidebar_text",
 ];
 
+const readWebsite = (value: unknown) => {
+  if (typeof value !== "string") return undefined;
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 const readBranding = (configObject: any): Branding | null => {
   const raw = configObject?.branding;
   if (!raw || typeof raw !== "object") return null;
@@ -64,6 +76,10 @@ const readBranding = (configObject: any): Branding | null => {
 
   return {
     name: typeof raw.name === "string" && raw.name.trim() ? raw.name.trim().slice(0, 60) : undefined,
+    description: typeof raw.description === "string" && raw.description.trim()
+      ? raw.description.trim().slice(0, 200)
+      : undefined,
+    website: readWebsite(raw.website),
     logo: typeof raw.logo === "string" && raw.logo.trim() ? raw.logo.trim() : undefined,
     colors,
     font,

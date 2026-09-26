@@ -106,7 +106,14 @@ export default async function Layout({
 
   return (
     <ConfigProvider value={config}>
-      <BrandingProvider value={{ name: branding?.name, logo: brandingLogo }}>
+      <BrandingProvider
+        value={{
+          name: branding?.name,
+          description: branding?.description,
+          website: branding?.website,
+          logo: brandingLogo,
+        }}
+      >
         {brandingFontsUrl && <link rel="stylesheet" href={brandingFontsUrl} />}
         {brandingCss && <style dangerouslySetInnerHTML={{ __html: brandingCss }} />}
         <RepoLayout>{errorMessage ? errorMessage : children}</RepoLayout>

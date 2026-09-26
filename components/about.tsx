@@ -20,6 +20,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import packageJson from "../package.json";
+import { useBranding } from "@/contexts/branding-context";
 
 const releaseRef = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF;
 const inferredTagVersion =
@@ -31,6 +32,12 @@ const version =
 const UPDATE_DOCS_URL = "https://pagescms.org/docs";
 
 export function About() {
+  const branding = useBranding();
+  if (branding.name || branding.logo) return <BrandedAbout />;
+  return <PagesCmsAbout />;
+}
+
+function PagesCmsAbout() {
   const [open, setOpen] = useState(false);
   const [latestVersion, setLatestVersion] = useState<string | null>(null);
 
@@ -165,6 +172,88 @@ export function About() {
       </DialogContent>
     </Dialog>
   );
+}
+
+// Fork addition: the About dialog while a site with `branding` is open.
+// Shows the site's logo, name and website; Pages CMS gets a single line.
+function BrandedAbout() {
+  const { name, description, website, logo } = useBranding();
+  const title = name || "About";
+  const initial = (name || "?").slice(0, 1).toUpperCase();
+
+  return (
+    <Dialog>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DialogTrigger asChild>
+              <Button size="icon-sm" variant="ghost">
+                <BrandMark logo={logo} initial={initial} className="size-6 rounded-md text-xs" />
+                <span className="sr-only">About {title}</span>
+              </Button>
+            </DialogTrigger>
+          </TooltipTrigger>
+          <TooltipContent>About {title}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      <DialogContent className="w-[20rem] max-w-[calc(100vw-2rem)]">
+        <DialogHeader className="items-center gap-3 text-center">
+          <BrandMark logo={logo} initial={initial} className="size-15 rounded-2xl text-2xl" />
+          <DialogTitle className="text-base font-semibold">{title}</DialogTitle>
+          <DialogDescription>
+            {description || (name ? `Content editor for ${name}.` : "Content editor.")}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="rounded-lg border">
+          {website ? (
+            <Row
+              label="Website"
+              value={<ExternalLink href={website}>{displayHost(website)}</ExternalLink>}
+            />
+          ) : null}
+          <Row
+            label="Built on"
+            value={
+              <ExternalLink href="https://pagescms.org">
+                Pages CMS {version}
+              </ExternalLink>
+            }
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function BrandMark({
+  logo,
+  initial,
+  className,
+}: {
+  logo?: string | null;
+  initial: string;
+  className: string;
+}) {
+  if (logo) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={logo} alt="" className={`${className} object-contain`} />;
+  }
+  return (
+    <span
+      className={`${className} flex items-center justify-center bg-primary font-semibold text-primary-foreground`}
+    >
+      {initial}
+    </span>
+  );
+}
+
+function displayHost(url: string) {
+  try {
+    return new URL(url).host.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
 }
 
 function compareSemver(a: string, b: string): number {
