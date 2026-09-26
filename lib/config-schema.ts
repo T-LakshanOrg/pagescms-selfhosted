@@ -794,6 +794,55 @@ const ContentObjectSchema: z.ZodType<any> = z.lazy(() =>
   z.union([ContentLeafSchema, ContentGroupSchema]),
 );
 
+// Fork addition: per-site branding of the CMS (see lib/branding.ts).
+const BrandingColorSchema = z
+  .string()
+  .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, {
+    message: "Colours must be hex values like '#1c6b45'.",
+  })
+  .optional();
+
+const BrandingFontSchema = z
+  .string()
+  .regex(/^[A-Za-z0-9 ]{1,60}$/, {
+    message: "Fonts must be a Google Fonts family name, e.g. 'Inter'.",
+  })
+  .optional();
+
+const BrandingSchema = z
+  .object(
+    {
+      name: z.string({ message: "'name' must be a string." }).optional(),
+      logo: z
+        .string()
+        .regex(/\.(svg|png|jpe?g|webp)$/i, {
+          message: "'logo' must be a path to an svg, png, jpg or webp file in the repository.",
+        })
+        .optional(),
+      colors: z
+        .object({
+          primary: BrandingColorSchema,
+          background: BrandingColorSchema,
+          surface: BrandingColorSchema,
+          text: BrandingColorSchema,
+          border: BrandingColorSchema,
+          sidebar: BrandingColorSchema,
+          sidebar_text: BrandingColorSchema,
+        })
+        .strict()
+        .optional(),
+      font: z
+        .object({
+          body: BrandingFontSchema,
+          heading: BrandingFontSchema,
+        })
+        .strict()
+        .optional(),
+    },
+    { message: "'branding' must be an object." },
+  )
+  .strict();
+
 // Main schema with media and content
 const ConfigSchema = z
   .object({
@@ -808,6 +857,7 @@ const ConfigSchema = z
       })
       .optional(),
     media: MediaSchema.optional(),
+    branding: BrandingSchema.optional(),
     content: z
       .array(ContentObjectSchema, {
         message:

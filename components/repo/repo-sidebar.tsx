@@ -12,6 +12,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useConfig } from "@/contexts/config-context";
 import { useRepo } from "@/contexts/repo-context";
+import { useBranding } from "@/contexts/branding-context";
 import { useUser } from "@/contexts/user-context";
 import { hasGithubIdentity } from "@/lib/authz-shared";
 import { isCacheEnabled, isConfigEnabled } from "@/lib/config";
@@ -91,6 +92,7 @@ type NavigationNode = {
 function RepoSwitcher() {
   const router = useRouter();
   const { owner, repo, branches = [] } = useRepo();
+  const branding = useBranding();
   const { config } = useConfig();
   const currentBranch = config?.branch ?? "";
   const sortedBranches = useMemo(
@@ -164,15 +166,16 @@ function RepoSwitcher() {
             >
               <Avatar className="h-8 w-8 rounded-md">
                 <AvatarImage
-                  src={`https://github.com/${owner}.png`}
-                  alt={owner}
+                  src={branding.logo || `https://github.com/${owner}.png`}
+                  alt={branding.name || owner}
+                  className={branding.logo ? "object-contain" : undefined}
                 />
                 <AvatarFallback>
                   {owner.slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{repo}</span>
+                <span className="truncate font-medium">{branding.name || repo}</span>
                 <span className="truncate text-xs text-muted-foreground">
                   {currentBranch || owner}
                 </span>

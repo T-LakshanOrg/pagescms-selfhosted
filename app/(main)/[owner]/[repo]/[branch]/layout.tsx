@@ -8,6 +8,8 @@ import { getToken } from "@/lib/token";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
+import { BrandingProvider } from "@/contexts/branding-context";
+import { readBranding, getBrandingCss, getBrandingFontsUrl, getBrandingLogo } from "@/lib/branding";
 
 export default async function Layout({
   children,
@@ -39,9 +41,11 @@ export default async function Layout({
   }
   
   let errorMessage = null;
+  let githubToken: string | undefined;
 
   try {
     const { token } = await getToken(user, owner, repo);
+    githubToken = token;
     const syncedConfig = await getConfig(
       owner,
       repo,
@@ -93,9 +97,20 @@ export default async function Layout({
     }
   }
 
+  const branding = readBranding(config.object);
+  const brandingCss = branding ? getBrandingCss(branding) : "";
+  const brandingFontsUrl = branding ? getBrandingFontsUrl(branding) : null;
+  const brandingLogo = branding?.logo && githubToken
+    ? await getBrandingLogo(owner, repo, decodedBranch, branding.logo, githubToken)
+    : null;
+
   return (
     <ConfigProvider value={config}>
-      <RepoLayout>{errorMessage ? errorMessage : children}</RepoLayout>
+      <BrandingProvider value={{ name: branding?.name, logo: brandingLogo }}>
+        {brandingFontsUrl && <link rel="stylesheet" href={brandingFontsUrl} />}
+        {brandingCss && <style dangerouslySetInnerHTML={{ __html: brandingCss }} />}
+        <RepoLayout>{errorMessage ? errorMessage : children}</RepoLayout>
+      </BrandingProvider>
     </ConfigProvider>
   );
 }
