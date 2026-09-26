@@ -196,20 +196,24 @@ function BrandedAbout() {
           <TooltipContent>About {title}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
-      <DialogContent className="w-[20rem] max-w-[calc(100vw-2rem)]">
+      <DialogContent className="w-[20rem] max-w-[calc(100vw-2rem)] grid-cols-1">
         <DialogHeader className="items-center gap-3 text-center">
           <BrandMark logo={logo} initial={initial} className="size-15 rounded-2xl text-2xl" />
           <DialogTitle className="text-base font-semibold">{title}</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-center">
             {description || (name ? `Content editor for ${name}.` : "Content editor.")}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="rounded-lg border">
+        <div className="min-w-0 rounded-lg border">
           {website ? (
             <Row
               label="Website"
-              value={<ExternalLink href={website}>{displayHost(website)}</ExternalLink>}
+              value={
+                <ExternalLink href={website} className="block truncate" title={displayHost(website)}>
+                  {displayHost(website)}
+                </ExternalLink>
+              }
             />
           ) : null}
           <Row
@@ -279,8 +283,8 @@ function parseSemver(versionString: string): [number, number, number] | null {
 function Row({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3 border-b px-4 py-2.5 last:border-b-0">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <div className="text-sm">{value}</div>
+      <span className="shrink-0 text-sm text-muted-foreground">{label}</span>
+      <div className="min-w-0 text-sm">{value}</div>
     </div>
   );
 }
@@ -288,16 +292,21 @@ function Row({ label, value }: { label: string; value: ReactNode }) {
 function ExternalLink({
   href,
   children,
+  className,
+  title,
 }: {
   href: string;
   children: ReactNode;
+  className?: string;
+  title?: string;
 }) {
   return (
     <a
       href={href}
       target="_blank"
       rel="noreferrer noopener"
-      className="text-primary hover:underline"
+      title={title}
+      className={`text-primary hover:underline${className ? ` ${className}` : ""}`}
     >
       {children}
     </a>
