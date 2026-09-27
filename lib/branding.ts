@@ -6,6 +6,8 @@
  */
 
 import { createOctokitInstance } from "@/lib/utils/octokit";
+import { getInstallationToken } from "@/lib/token";
+import { getConfig } from "@/lib/config-store";
 
 type BrandingColors = {
   primary?: string;
@@ -220,5 +222,74 @@ const getBrandingLogo = async (
   return src;
 };
 
-export type { Branding };
-export { readBranding, getBrandingCss, getBrandingFontsUrl, getBrandingLogo };
+// The sign-in page is branded for one site when the link names it, either
+// as ?site=owner/repo or through the page the visitor was headed to.
+const RESERVED_SEGMENTS = new Set(["admin", "settings", "api", "auth", "sign-in"]);
+const SITE_PATTERN = /^([A-Za-z0-9-]{1,39})\/([A-Za-z0-9._-]{1,100})$/;
+const REDIRECT_PATTERN = /^\/([A-Za-z0-9-]{1,39})\/([A-Za-z0-9._-]{1,100})(?:[/?#]|$)/;
+
+const getSignInSite = (site?: string, redirect?: string) => {
+  const fromSite = site?.trim().match(SITE_PATTERN);
+  if (fromSite) return { owner: fromSite[1], repo: fromSite[2] };
+
+  const fromRedirect = redirect?.match(REDIRECT_PATTERN);
+  if (fromRedirect && !RESERVED_SEGMENTS.has(fromRedirect[1].toLowerCase())) {
+    return { owner: fromRedirect[1], repo: fromRedirect[2] };
+  }
+  return null;
+};
+
+type SignInBranding = {
+  owner: string;
+  repo: string;
+  name?: string;
+  logo: string | null;
+  css: string;
+  fontsUrl: string | null;
+};
+
+const signInCache = new Map<string, { time: number; value: SignInBranding | null }>();
+
+// Reads the site's branding with the GitHub App's own access, since nobody
+// is signed in yet. Results (including "no branding") are kept for a few
+// minutes so the public sign-in page cannot be used to hammer GitHub.
+const getSignInBranding = async (owner: string, repo: string): Promise<SignInBranding | null> => {
+  const cacheKey = `${owner.toLowerCase()}/${repo.toLowerCase()}`;
+  const cached = signInCache.get(cacheKey);
+  if (cached && Date.now() - cached.time < LOGO_TTL) return cached.value;
+
+  let value: SignInBranding | null = null;
+  try {
+    const token = await getInstallationToken(owner, repo);
+    const octokit = createOctokitInstance(token);
+    const { data: repoData } = await octokit.rest.repos.get({ owner, repo });
+    const branch = repoData.default_branch;
+    const config = await getConfig(owner, repo, branch, { getToken: async () => token });
+    const branding = readBranding(config?.object);
+    if (branding) {
+      value = {
+        owner: repoData.owner.login,
+        repo: repoData.name,
+        name: branding.name,
+        logo: branding.logo ? await getBrandingLogo(owner, repo, branch, branding.logo, token) : null,
+        css: getBrandingCss(branding),
+        fontsUrl: getBrandingFontsUrl(branding),
+      };
+    }
+  } catch {
+    // Unknown repository or the app is not installed there: default sign-in.
+  }
+
+  signInCache.set(cacheKey, { time: Date.now(), value });
+  return value;
+};
+
+export type { Branding, SignInBranding };
+export {
+  readBranding,
+  getBrandingCss,
+  getBrandingFontsUrl,
+  getBrandingLogo,
+  getSignInSite,
+  getSignInBranding,
+};

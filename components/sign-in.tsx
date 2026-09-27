@@ -10,7 +10,13 @@ import { OtpVerificationForm } from "@/components/otp-verification-form";
 import { toast } from "sonner";
 import { Loader } from "lucide-react";
 
-export function SignIn() {
+export function SignIn({
+  defaultRedirect = "/",
+  branding,
+}: {
+  defaultRedirect?: string;
+  branding?: { name?: string; logo?: string | null };
+}) {
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"email" | "otp">("email");
@@ -21,7 +27,7 @@ export function SignIn() {
 
   const searchParams = useSearchParams();
   const error = searchParams.get("error") || "";
-  const redirectParam = searchParams.get("redirect") || "";
+  const redirectParam = searchParams.get("redirect") || defaultRedirect;
   const safeRedirect = getSafeRedirect(redirectParam);
   const callbackURL = getAuthCallbackURL(safeRedirect);
   const errorCallbackURL =
@@ -178,18 +184,23 @@ export function SignIn() {
         ) : (
           <div className="space-y-6">
             <div className="flex flex-col items-center gap-3">
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 480 480"
-                className="size-12 rounded-xl"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <rect width="480" height="480" rx="96" fill="#6A3AE0" />
-                <path d="M120 120H176V308H300V360H120V120Z" fill="#FFFFFF" />
-                <path d="M300 120H360V232H300V120Z" fill="#FFFFFF" />
-              </svg>
+              {branding?.logo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={branding.logo} alt="" className="size-12 rounded-xl object-contain" />
+              ) : (
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 480 480"
+                  className="size-12 rounded-xl"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <rect width="480" height="480" rx="96" fill="#6A3AE0" />
+                  <path d="M120 120H176V308H300V360H120V120Z" fill="#FFFFFF" />
+                  <path d="M300 120H360V232H300V120Z" fill="#FFFFFF" />
+                </svg>
+              )}
               <h1 className="text-lg font-medium tracking-tight text-center">
-                Sign in to LWP Test
+                Sign in to {branding?.name || "LWP Test"}
               </h1>
             </div>
             <Button
