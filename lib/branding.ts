@@ -138,12 +138,16 @@ const getBrandingCss = (branding: Branding) => {
       set(light, name, colors.text);
     }
   }
-  if (colors.text && surface) {
-    set(light, "muted", mix(colors.text, 5, surface));
-    set(light, "accent", mix(colors.text, 6, surface));
-    set(light, "secondary", mix(colors.text, 6, surface));
-    set(light, "muted-foreground", mix(colors.text, 60, surface));
+  // Soft fills (badges, hovers, muted panels) are tinted with the brand
+  // colour over the page background, so they sit well on a coloured page.
+  const tint = colors.primary ?? colors.text;
+  const tintBase = colors.background ?? surface;
+  if (tint && tintBase) {
+    set(light, "muted", mix(tint, 7, tintBase));
+    set(light, "secondary", mix(tint, 10, tintBase));
   }
+  if (tint && surface) set(light, "accent", mix(tint, 8, surface));
+  if (colors.text && surface) set(light, "muted-foreground", mix(colors.text, 60, surface));
   if (colors.border) {
     set(light, "border", colors.border);
     set(light, "input", colors.border);
